@@ -1,23 +1,15 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'package:flutter/gestures.dart';
 
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
       home: MyHomePage(title: 'Flutter Demo Home Page'),
@@ -28,15 +20,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -44,68 +27,349 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  Map<String, String> _data = {'1': 'one', '3': '3', 'two': '2', '223': '223'};
+  List<Offset> _dottedCircleOffset = [];
+  Map<Offset, Offset> _joinedLinedOffset = {};
+  List<String> _questionData = [],
+      _answerData = [],
+      _question = [],
+      _answer = [];
+  Offset _startOffset, _updateOffset, _offset;
+  int flag = 0, _index1, _index2;
+  bool _isUnderCircle = false, _connectStatus = false;
+  List<int> _joinedLineStatus = [];
+  // List<int> _joinedLineIndex = [];
+  @override
+  void initState() {
+    _initData();
+    super.initState();
+  }
 
-  void _incrementCounter() {
+  _initData() async {
+    _questionData.addAll(_data.keys);
+    _answerData.addAll(_data.values);
+    _question.addAll(_data.keys);
+    _answer.addAll(_data.values);
+    _question.shuffle();
+    _answer.shuffle();
+    for (int i = 0; i < _data.length * 2; i++) _joinedLineStatus.add(0);
+    print('data: ${_data},data length:: ${_data.length}');
+  }
+
+  void _countOffsetOfCircle(Offset o) {
+    _dottedCircleOffset.add(o + Offset(12.5, 12.5));
+    print(_dottedCircleOffset);
+  }
+
+  void _onStart(Offset start) {
+    print('offset on start:: $start');
+    for (int i = 0; i < _dottedCircleOffset.length; i++) {
+      if ((start - (_dottedCircleOffset[i])).distance < 35 &&
+          _joinedLineStatus[i] != 1) {
+        _index1 = i;
+        print('index at stared:$i');
+        if (i < _question.length) {
+          print(
+              'drag from left side:${_questionData.indexOf(_question[_index1])}');
+        } else {
+          print('drag from right side:');
+        }
+        _joinLine(i);
+      }
+    }
+  }
+
+  void _joinLine(int i) {
+    // if (_joinedLineIndex != null) if (!_joinedLineIndex.contains(i))
+    _offset = _dottedCircleOffset[i];
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _isUnderCircle = true;
+      _startOffset = _offset;
     });
+  }
+
+  void _onUpdate(Offset offset) {
+    setState(() {
+      _updateOffset = offset;
+    });
+  }
+
+  void _onEnd(ScaleEndDetails end) {
+    if (_updateOffset != null && _startOffset != null) {
+      print('offset at end:: $_updateOffset');
+      for (int i = 0; i < _dottedCircleOffset.length; i++) {
+        if ((_updateOffset - _dottedCircleOffset[i]).distance < 35 &&
+            _joinedLineStatus[i] != 1) {
+          print('index at end: $i');
+          _index2 = i;
+          _connectDottes();
+        } else {
+          setState(() {
+            _connectStatus = true;
+          });
+        }
+      }
+
+      setState(() {
+        _startOffset = null;
+        _updateOffset = null;
+        _offset = null;
+        _isUnderCircle = false;
+      });
+    }
+  }
+
+  void _connectDottes() {
+    if (_index1 < _question.length &&
+        _index2 < _dottedCircleOffset.length &&
+        _index2 >= _question.length) {
+      print('true from left side');
+      if (_questionData.indexOf(_question[_index1]) ==
+          _answerData.indexOf(_answer[_index2 - _answer.length])) {
+        print('${_answerData.indexOf(_answer[_index2 - _answer.length])}');
+        setState(() {
+          _joinedLinedOffset.addAll(
+              {_dottedCircleOffset[_index1]: _dottedCircleOffset[_index2]});
+          _joinedLineStatus[_index1] = 1;
+          _joinedLineStatus[_index2] = 1;
+        });
+      }
+    } else if (_index1 >= _question.length && _index2 < _question.length) {
+      print('true from right side');
+      if (_questionData.indexOf(_question[_index2]) ==
+          _answerData.indexOf(_answer[_index1 - _answer.length])) {
+        setState(() {
+          _joinedLinedOffset.addAll(
+              {_dottedCircleOffset[_index2]: _dottedCircleOffset[_index1]});
+          _joinedLineStatus[_index1] = 1;
+          _joinedLineStatus[_index2] = 1;
+        });
+      }
+    } else {
+      setState(() {
+        _connectStatus = true;
+      });
+    }
+  }
+
+  Widget _buildButton(String text, int index) {
+    return CommonButton(
+      text: text,
+      key: Key('$index'),
+    );
+  }
+
+  Widget _build(BoxConstraints constraint, int index, String s,
+      AlignmentDirectional alignment) {
+    return Stack(alignment: alignment, children: <Widget>[
+      DottedCircle(
+        height: (MediaQuery.of(context).size.height - constraint.maxHeight),
+        offsetOfCicle: _countOffsetOfCircle,
+        constraint: constraint,
+      ),
+      Padding(
+        padding: index < _question.length
+            ? EdgeInsets.only(right: 12.5)
+            : EdgeInsets.only(left: 12.5),
+        child: _buildButton(s, index++),
+      ),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    int index = 0;
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
-            ),
+        backgroundColor: Color(0xff800000),
+        body: Center(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                flex: 30,
+                child: Container(),
+              ),
+              Expanded(
+                flex: 70,
+                child: LayoutBuilder(builder: (context, constraint) {
+                  return Container(
+                    key: Key('match_the_dotts'),
+                    decoration: BoxDecoration(
+                        color: Color(0xffA52A2A),
+                        borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(30),
+                            topLeft: Radius.circular(30))),
+                    child: CustomPaint(
+                      foregroundPainter: DrawLine(
+                          dottedOffset: _joinedLinedOffset,
+                          connectStatus: _connectStatus,
+                          startOffset: _startOffset,
+                          endOffset: _updateOffset),
+                      child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onScaleStart: (ScaleStartDetails s) {
+                            Offset start =
+                                (context.findRenderObject() as RenderBox)
+                                    .globalToLocal(s.focalPoint);
+                            _onStart(start);
+                          },
+                          onScaleUpdate: (ScaleUpdateDetails d) {
+                            Offset update =
+                                (context.findRenderObject() as RenderBox)
+                                    .globalToLocal(d.focalPoint);
+                            if (_isUnderCircle) _onUpdate(update);
+                          },
+                          onScaleEnd: _onEnd,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: <Widget>[
+                              Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: _question.map((s) {
+                                  return _build(constraint, index++, s,
+                                      AlignmentDirectional.centerEnd);
+                                }).toList(growable: false),
+                              ),
+                              Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: _answer.map((a) {
+                                  return _build(constraint, index++, a,
+                                      AlignmentDirectional.centerStart);
+                                }).toList(growable: false),
+                              ),
+                            ],
+                          )),
+                    ),
+                  );
+                }),
+              )
+            ],
+          ),
+        ));
+  }
+}
+
+class DrawLine extends CustomPainter {
+  final Offset startOffset;
+  final Offset endOffset;
+  Map<Offset, Offset> dottedOffset;
+  Map<Offset, Offset> points;
+  final bool connectStatus;
+  DrawLine(
+      {this.endOffset,
+      this.startOffset,
+      this.dottedOffset,
+      this.points,
+      this.connectStatus}) {
+    start = startOffset;
+    end = endOffset;
+  }
+  Paint _paint = Paint()
+    ..color = Colors.yellow
+    ..strokeWidth = 6.0
+    ..strokeCap = StrokeCap.round
+    ..maskFilter = MaskFilter.blur(BlurStyle.solid, 4.0);
+  Paint _pain1 = new Paint()
+    ..color = Colors.white
+    ..strokeWidth = 8.0
+    ..strokeCap = StrokeCap.round
+    ..maskFilter = MaskFilter.blur(BlurStyle.solid, 1.0);
+  Offset start, end;
+  @override
+  void paint(Canvas canvas, Size size) {
+    print('drawing line');
+    if (startOffset != null && endOffset != null) {
+      canvas.drawLine(startOffset, endOffset, _pain1);
+    }
+
+    if (dottedOffset != null) {
+      for (int i = 0; i < dottedOffset.length; i++)
+        canvas.drawLine(dottedOffset.keys.elementAt(i),
+            dottedOffset.values.elementAt(i), _paint);
+    }
+  }
+
+  @override
+  void addListener(listener) {
+    print('listenre::');
+    super.addListener(listener);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
+  }
+}
+
+class CommonButton extends StatelessWidget {
+  final String text;
+  final Key key;
+  CommonButton({this.text, this.key});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: key,
+      decoration: BoxDecoration(
+          border: Border.all(width: 2.0, color: Colors.white54),
+          boxShadow: [
+            BoxShadow(
+                blurRadius: 2.0, color: Colors.white54, offset: Offset(1, 4))
           ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+          color: Colors.red,
+          borderRadius: BorderRadius.all(Radius.circular(20))),
+      height: 100.0,
+      width: 100.0,
+      child: Center(
+          child: Text(
+        text,
+        style: TextStyle(color: Colors.white, fontSize: 20),
+      )),
+    );
+  }
+}
+
+class DottedCircle extends StatefulWidget {
+  final GlobalKey key;
+  final Function offsetOfCicle;
+  final BoxConstraints constraint;
+  final double height;
+  DottedCircle({this.key, this.offsetOfCicle, this.constraint, this.height});
+  @override
+  DottedCircleState createState() {
+    return new DottedCircleState();
+  }
+}
+
+class DottedCircleState extends State<DottedCircle> {
+  GlobalKey _globalKey = GlobalKey();
+  List<Offset> _offsetOffAllDottedCircle = [];
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
+    super.initState();
+  }
+
+  void _afterLayout(_) {
+    final RenderBox renderBoxRed = _globalKey.currentContext.findRenderObject();
+    Offset offset = -renderBoxRed.globalToLocal(Offset(0.0, widget.height));
+    _offsetOffAllDottedCircle.add(offset);
+    widget.offsetOfCicle(offset);
+    print("POSITION of dotted Cirlce: $offset, ");
+  }
+
+  int count = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+          color: Colors.grey, borderRadius: BorderRadius.circular(12.5)),
+      height: 25,
+      width: 25,
+      key: _globalKey,
     );
   }
 }
