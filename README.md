@@ -1,1 +1,1 @@
-# match the line from left to right, by joining line.
+# match the line from left to right,and right to left
