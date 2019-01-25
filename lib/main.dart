@@ -53,27 +53,19 @@ class _MyHomePageState extends State<MyHomePage> {
     _question.shuffle();
     _answer.shuffle();
     for (int i = 0; i < _data.length * 2; i++) _joinedLineStatus.add(0);
-    print('data: ${_data},data length:: ${_data.length}');
   }
 
   void _countOffsetOfCircle(Offset o) {
     _dottedCircleOffset.add(o + Offset(12.5, 12.5));
-    print(_dottedCircleOffset);
   }
 
   void _onStart(Offset start) {
-    print('offset on start:: $start');
     for (int i = 0; i < _dottedCircleOffset.length; i++) {
       if ((start - (_dottedCircleOffset[i])).distance < 35 &&
           _joinedLineStatus[i] != 1) {
         _index1 = i;
-        print('index at stared:$i');
         if (i < _question.length) {
-          print(
-              'drag from left side:${_questionData.indexOf(_question[_index1])}');
-        } else {
-          print('drag from right side:');
-        }
+        } else {}
         _joinLine(i);
       }
     }
@@ -96,7 +88,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _onEnd(ScaleEndDetails end) {
     if (_updateOffset != null && _startOffset != null) {
-      print('offset at end:: $_updateOffset');
       for (int i = 0; i < _dottedCircleOffset.length; i++) {
         if ((_updateOffset - _dottedCircleOffset[i]).distance < 35 &&
             _joinedLineStatus[i] != 1) {
@@ -267,7 +258,7 @@ class DrawLine extends CustomPainter {
     ..strokeWidth = 6.0
     ..strokeCap = StrokeCap.round
     ..maskFilter = MaskFilter.blur(BlurStyle.solid, 4.0);
-  Paint _pain1 = new Paint()
+  Paint _paint1 = new Paint()
     ..color = Colors.white
     ..strokeWidth = 8.0
     ..strokeCap = StrokeCap.round
@@ -275,9 +266,10 @@ class DrawLine extends CustomPainter {
   Offset start, end;
   @override
   void paint(Canvas canvas, Size size) {
-    print('drawing line');
     if (startOffset != null && endOffset != null) {
-      canvas.drawLine(startOffset, endOffset, _pain1);
+      canvas.drawLine(startOffset, endOffset, _paint1);
+      canvas.drawCircle(startOffset, 10, _paint);
+      canvas.drawCircle(endOffset, 10, _paint);
     }
 
     if (dottedOffset != null) {
@@ -289,7 +281,6 @@ class DrawLine extends CustomPainter {
 
   @override
   void addListener(listener) {
-    print('listenre::');
     super.addListener(listener);
   }
 
