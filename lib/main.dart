@@ -185,11 +185,7 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             children: <Widget>[
               Expanded(
-                flex: 30,
-                child: Container(),
-              ),
-              Expanded(
-                flex: 70,
+                flex: 1,
                 child: LayoutBuilder(builder: (context, constraint) {
                   return Container(
                     key: Key('match_the_dotts'),
